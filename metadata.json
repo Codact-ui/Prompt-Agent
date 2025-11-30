@@ -1,0 +1,5 @@
+{
+  "name": "Prompt Optimizer Agent",
+  "description": "An application to iteratively create, enhance, evaluate, and optimize prompts for Large Language Models using a suite of specialized agents, inspired by a minimalist, Notion-like UI.",
+  "requestFramePermissions": []
+}

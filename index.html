@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en" class="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prompt Optimizer Agent</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        darkMode: 'class',
+        theme: {
+          extend: {
+            colors: {
+              'notion-bg': 'hsl(var(--notion-bg))',
+              'notion-text': 'hsl(var(--notion-text))',
+              'notion-border': 'hsl(var(--notion-border))',
+              'notion-hover': 'hsl(var(--notion-hover))',
+              'notion-accent': 'hsl(var(--notion-accent))',
+              'notion-card': 'hsl(var(--notion-card))',
+            }
+          }
+        }
+      }
+    </script>
+    <style>
+      :root {
+        --notion-bg: 38 10% 97%;
+        --notion-text: 38 7% 23%;
+        --notion-border: 0 0% 92%;
+        --notion-hover: 0 0% 90%;
+        --notion-accent: 210 79% 51%;
+        --notion-card: 0 0% 100%;
+      }
+      .dark {
+        --notion-bg: 216 8% 18%;
+        --notion-text: 220 10% 89%;
+        --notion-border: 210 5% 30%;
+        --notion-hover: 210 5% 35%;
+        --notion-accent: 210 79% 61%;
+        --notion-card: 216 8% 22%;
+      }
+      /* Diff styles */
+      del { background-color: #ffebe9; color: #c4291c; text-decoration: none; }
+      ins { background-color: #e6ffec; color: #22863a; text-decoration: none; }
+      .dark del { background-color: #401f1d; color: #ff9185; }
+      .dark ins { background-color: #1c3320; color: #85e89d; }
+      
+      /* Toast Animations */
+      @keyframes toast-in {
+        from { transform: translateY(100%) scale(0.9); opacity: 0; }
+        to { transform: translateY(0) scale(1); opacity: 1; }
+      }
+      @keyframes toast-out {
+        from { transform: translateY(0) scale(1); opacity: 1; }
+        to { transform: translateY(100%) scale(0.9); opacity: 0; }
+      }
+      .toast-in { animation: toast-in 0.3s ease-out forwards; }
+      .toast-out { animation: toast-out 0.3s ease-in forwards; }
+
+      /* Modal Animations */
+       @keyframes modal-fade-in {
+        from { opacity: 0; }
+        to { opacity: 1; }
+      }
+      @keyframes modal-content-in {
+        from { opacity: 0; transform: scale(0.95) translateY(10px); }
+        to { opacity: 1; transform: scale(1) translateY(0); }
+      }
+      .modal-fade-in { animation: modal-fade-in 0.2s ease-out forwards; }
+      .modal-content-in { animation: modal-content-in 0.2s ease-out forwards; }
+
+      /* Markdown Styles */
+      .markdown-body p { margin-bottom: 0.75em; }
+      .markdown-body h1, .markdown-body h2, .markdown-body h3 { font-weight: 600; margin-top: 1em; margin-bottom: 0.5em; }
+      .markdown-body ul { list-style-type: disc; padding-left: 1.5em; margin-bottom: 0.75em; }
+      .markdown-body ol { list-style-type: decimal; padding-left: 1.5em; margin-bottom: 0.75em; }
+      .markdown-body code { background-color: rgba(128, 128, 128, 0.2); padding: 0.2em 0.4em; rounded: 3px; font-size: 0.9em; font-family: monospace; border-radius: 4px; }
+      .markdown-body pre { background-color: rgba(128, 128, 128, 0.1); padding: 1em; border-radius: 6px; overflow-x: auto; margin-bottom: 0.75em; }
+      .markdown-body pre code { background-color: transparent; padding: 0; }
+      .markdown-body blockquote { border-left: 3px solid var(--notion-accent); padding-left: 1em; font-style: italic; color: gray; margin-bottom: 0.75em; }
+
+    </style>
+<script type="importmap">
+{
+  "imports": {
+    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.19.0",
+    "react/": "https://aistudiocdn.com/react@^19.1.1/",
+    "react": "https://aistudiocdn.com/react@^19.1.1",
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.1.1/",
+    "recharts": "https://aistudiocdn.com/recharts@^3.2.0",
+    "react-dom": "https://aistudiocdn.com/react-dom@^19.1.1",
+    "react-markdown": "https://esm.sh/react-markdown@9?bundle",
+    "remark-gfm": "https://esm.sh/remark-gfm@4?bundle"
+  }
+}
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/diff_match_patch/20121119/diff_match_patch.js"></script>
+</head>
+<body class="bg-notion-bg text-notion-text">
+    <div id="root"></div>
+    <script type="module" src="/index.tsx"></script>
+</body>
+</html>

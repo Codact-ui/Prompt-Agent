@@ -1,6 +1,7 @@
 
 import React, { useState, useCallback, useEffect } from 'react';
 import { ViewType, AgentType, HistoryItem, TemplateItem, EvaluationResult, ToastMessage } from './types';
+import { getTemplates, createTemplate, updateTemplate as apiUpdateTemplate, deleteTemplate as apiDeleteTemplate } from './services/adkService';
 import Sidebar from './components/Sidebar';
 import CreatorAgent from './components/agents/CreatorAgent';
 import EnhancerAgent from './components/agents/EnhancerAgent';
@@ -19,10 +20,10 @@ const App: React.FC = () => {
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [templates, setTemplates] = useState<TemplateItem[]>([]);
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
-  
+
   const [currentPrompt, setCurrentPrompt] = useState<string>('');
   const [optimizationSuggestions, setOptimizationSuggestions] = useState<string[]>([]);
-  
+
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [promptToSave, setPromptToSave] = useState<string | null>(null);
@@ -41,41 +42,14 @@ const App: React.FC = () => {
       localStorage.setItem('promptHistory', JSON.stringify(history));
     } catch (error) { console.error("Failed to save history to localStorage", error); }
   }, [history]);
-  
-  // Template Management
-  useEffect(() => {
-    try {
-      const storedTemplates = localStorage.getItem('promptTemplates');
-      if (storedTemplates) setTemplates(JSON.parse(storedTemplates));
-    } catch (error) { console.error("Failed to load templates from localStorage", error); }
-  }, []);
 
-  useEffect(() => {
-    try {
-      localStorage.setItem('promptTemplates', JSON.stringify(templates));
-    } catch (error) { console.error("Failed to save templates to localStorage", error); }
-  }, [templates]);
-
+  // Helper functions
   const addToast = (message: string, type: 'success' | 'error' = 'success') => {
     const id = Date.now();
     setToasts(prev => [...prev, { id, message, type }]);
     setTimeout(() => {
-        setToasts(prev => prev.filter(t => t.id !== id));
+      setToasts(prev => prev.filter(t => t.id !== id));
     }, 3000);
-  };
-
-  const handleViewChange = (view: ViewType) => {
-    setActiveView(view);
-  };
-  
-  const addToHistory = useCallback((item: Omit<HistoryItem, 'id'>) => {
-    const newItem = { ...item, id: new Date().toISOString() };
-    setHistory(prev => [newItem, ...prev]);
-  }, []);
-
-  const clearHistory = () => { 
-      setHistory([]); 
-      addToast("History cleared successfully.", "success");
   };
 
   const extractVariables = (text: string): string[] => {
@@ -83,72 +57,113 @@ const App: React.FC = () => {
     const foundVars = new Set<string>();
     let match;
     while ((match = regex.exec(text)) !== null) {
-        foundVars.add(match[1].trim());
+      foundVars.add(match[1].trim());
     }
     return Array.from(foundVars);
   };
 
-  const addTemplate = (name: string, prompt: string, description: string = '', tags: string[] = []) => {
-    const variables = extractVariables(prompt);
-    const newTemplate: TemplateItem = {
-        id: new Date().toISOString(),
-        name,
-        prompt,
-        description,
-        tags,
-        variables,
-        timestamp: new Date().toISOString()
-    };
-    setTemplates(prev => [newTemplate, ...prev]);
-    addToast(`Template "${name}" saved!`, "success");
+  // Template Management
+  const fetchTemplates = useCallback(async () => {
+    try {
+      const data = await getTemplates();
+      // Map backend response to frontend TemplateItem
+      const mappedTemplates: TemplateItem[] = data.map((t: any) => ({
+        id: t.id.toString(),
+        name: t.name,
+        description: t.description,
+        prompt: t.template_text,
+        tags: [], // Backend doesn't support tags for templates yet
+        variables: extractVariables(t.template_text),
+        timestamp: t.updated_at || t.created_at
+      }));
+      setTemplates(mappedTemplates);
+    } catch (error) {
+      console.error("Failed to load templates", error);
+      // Don't show toast on initial load failure to avoid spamming if backend is down
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchTemplates();
+  }, [fetchTemplates]);
+
+  const addTemplate = async (name: string, prompt: string, description: string = '', tags: string[] = []) => {
+    try {
+      await createTemplate(name, prompt, description, tags.length > 0 ? tags[0] : undefined);
+      await fetchTemplates();
+      addToast(`Template "${name}" saved!`, "success");
+    } catch (error) {
+      console.error("Failed to save template", error);
+      addToast("Failed to save template", "error");
+    }
   };
 
-  const updateTemplate = (id: string, updates: Partial<TemplateItem>) => {
-      setTemplates(prev => prev.map(t => {
-          if (t.id === id) {
-              const updatedPrompt = updates.prompt || t.prompt;
-              return {
-                  ...t,
-                  ...updates,
-                  variables: extractVariables(updatedPrompt),
-                  timestamp: new Date().toISOString()
-              };
-          }
-          return t;
-      }));
+  const updateTemplate = async (id: string, updates: Partial<TemplateItem>) => {
+    try {
+      const backendUpdates: any = {};
+      if (updates.name) backendUpdates.name = updates.name;
+      if (updates.prompt) backendUpdates.template_text = updates.prompt;
+      if (updates.description) backendUpdates.description = updates.description;
+
+      await apiUpdateTemplate(parseInt(id), backendUpdates);
+      await fetchTemplates();
       addToast("Template updated successfully", "success");
+    } catch (error) {
+      console.error("Failed to update template", error);
+      addToast("Failed to update template", "error");
+    }
+  };
+
+  const deleteTemplate = async (id: string) => {
+    try {
+      await apiDeleteTemplate(parseInt(id));
+      await fetchTemplates();
+      addToast("Template deleted.", "success");
+    } catch (error) {
+      console.error("Failed to delete template", error);
+      addToast("Failed to delete template", "error");
+    }
+  };
+
+  const handleViewChange = (view: ViewType) => {
+    setActiveView(view);
+  };
+
+  const addToHistory = useCallback((item: Omit<HistoryItem, 'id'>) => {
+    const newItem = { ...item, id: new Date().toISOString() };
+    setHistory(prev => [newItem, ...prev]);
+  }, []);
+
+  const clearHistory = () => {
+    setHistory([]);
+    addToast("History cleared successfully.", "success");
   };
 
   const handleModalSave = (name: string, prompt: string, description: string, tags: string[]) => {
-      if (templateToEdit) {
-          updateTemplate(templateToEdit.id, { name, prompt, description, tags });
-      } else {
-          addTemplate(name, prompt, description, tags);
-      }
-      setIsModalOpen(false);
-      setTemplateToEdit(null);
-      setPromptToSave(null);
+    if (templateToEdit) {
+      updateTemplate(templateToEdit.id, { name, prompt, description, tags });
+    } else {
+      addTemplate(name, prompt, description, tags);
+    }
+    setIsModalOpen(false);
+    setTemplateToEdit(null);
+    setPromptToSave(null);
   };
 
   const handleRequestSaveTemplate = (prompt: string) => {
-      if (!prompt) {
-          addToast("Cannot save an empty prompt.", "error");
-          return;
-      }
-      setTemplateToEdit(null);
-      setPromptToSave(prompt);
-      setIsModalOpen(true);
+    if (!prompt) {
+      addToast("Cannot save an empty prompt.", "error");
+      return;
+    }
+    setTemplateToEdit(null);
+    setPromptToSave(prompt);
+    setIsModalOpen(true);
   };
 
   const handleRequestEditTemplate = (template: TemplateItem) => {
-      setTemplateToEdit(template);
-      setPromptToSave(template.prompt);
-      setIsModalOpen(true);
-  };
-  
-  const deleteTemplate = (id: string) => {
-    setTemplates(prev => prev.filter(t => t.id !== id));
-    addToast("Template deleted.", "success");
+    setTemplateToEdit(template);
+    setPromptToSave(template.prompt);
+    setIsModalOpen(true);
   };
 
   const handleSendToAgent = (prompt: string, view: ViewType) => {
@@ -158,9 +173,9 @@ const App: React.FC = () => {
   };
 
   const handleEvaluateAndOptimize = (prompt: string, evaluation: EvaluationResult) => {
-      setCurrentPrompt(prompt);
-      setOptimizationSuggestions(evaluation.suggestions);
-      setActiveView(ViewType.OPTIMIZER);
+    setCurrentPrompt(prompt);
+    setOptimizationSuggestions(evaluation.suggestions);
+    setActiveView(ViewType.OPTIMIZER);
   };
 
 
@@ -204,19 +219,19 @@ const App: React.FC = () => {
       </main>
       <ToastContainer toasts={toasts} />
       {isModalOpen && promptToSave !== null && (
-          <SaveTemplateModal
-            prompt={promptToSave}
-            initialValues={templateToEdit ? {
-                name: templateToEdit.name,
-                description: templateToEdit.description || '',
-                tags: templateToEdit.tags || []
-            } : undefined}
-            onSave={handleModalSave}
-            onClose={() => {
-                setIsModalOpen(false);
-                setTemplateToEdit(null);
-            }}
-           />
+        <SaveTemplateModal
+          prompt={promptToSave}
+          initialValues={templateToEdit ? {
+            name: templateToEdit.name,
+            description: templateToEdit.description || '',
+            tags: templateToEdit.tags || []
+          } : undefined}
+          onSave={handleModalSave}
+          onClose={() => {
+            setIsModalOpen(false);
+            setTemplateToEdit(null);
+          }}
+        />
       )}
     </div>
   );

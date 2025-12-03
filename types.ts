@@ -52,30 +52,10 @@ export interface FewShotExample {
 
 export interface HistoryItem {
   id: string;
-  agent: AgentType;
-  prompt: string;
-  result: string | PromptBlock[] | EvaluationResult | OptimizerResult[] | FewShotExample[];
-  timestamp: string;
-}
-
-export interface TemplateItem {
-    id: string;
-    name: string;
-    description?: string;
-    prompt: string;
-    tags: string[];
-    variables: string[];
-    timestamp: string;
-}
-
-export interface ToastMessage {
-  id: number;
-  message: string;
-  type: 'success' | 'error';
 }
 
 export interface AppSettings {
-    model: string;
-    temperature: number;
-    customEvaluationRubric: string;
+  model: string;
+  temperature: number;
+  customEvaluationRubric: string;
 }

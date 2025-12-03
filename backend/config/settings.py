@@ -16,8 +16,8 @@ class Settings(BaseSettings):
     gemini_api_key: str = ""
     
     # ADK Configuration
-    adk_model: str = "gemini-2.0-flash-exp"
-    adk_thinking_model: str = "gemini-2.0-flash-thinking-exp"
+    adk_model: str = "gemini-2.5-flash"
+    adk_thinking_model: str = "gemini-2.5-flash"
     
     # API Configuration
     cors_origins: List[str] = ["http://localhost:5173", "http://localhost:3000"]
@@ -34,7 +34,8 @@ class Settings(BaseSettings):
     port: int = 8000
     
     class Config:
-        env_file = ".env"
+        # Load .env from the backend directory (parent of config directory)
+        env_file = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), ".env")
         case_sensitive = False
         extra = "ignore"
 
@@ -48,4 +49,12 @@ def get_settings() -> Settings:
     global _settings
     if _settings is None:
         _settings = Settings()
+        
+        # Auto-configure Google Gen AI environment variables for ADK
+        if _settings.gemini_api_key:
+            # Set the API key that ADK/GenAI SDK expects
+            os.environ["GOOGLE_API_KEY"] = _settings.gemini_api_key
+            # Force use of AI Studio (not Vertex AI) when using API key
+            os.environ["GOOGLE_GENAI_USE_VERTEXAI"] = "False"
+            
     return _settings

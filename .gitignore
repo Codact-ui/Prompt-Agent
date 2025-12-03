@@ -1,1 +1,56 @@
+# Node modules
 node_modules
+
+# Environment files (NEVER commit these!)
+.env
+.env.local
+.env.*.local
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Build outputs
+dist/
+build/
+*.tsbuildinfo
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.py[cod]
+
+# Test and debug files
+test_*.py
+check_*.py
+inspect_*.py
+request.json
+
+# Package manager lock files (optional - uncomment if needed)
+# pnpm-lock.yaml
+# package-lock.json
+# yarn.lock

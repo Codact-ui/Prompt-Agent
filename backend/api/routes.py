@@ -1,14 +1,17 @@
 """API routes for agent endpoints."""
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import StreamingResponse
-from backend.agents import (
+from google.genai.types import Content, Part
+from google.adk.runners import Runner
+from database import DatabaseSessionService
+from agents import (
     create_creator_agent,
     create_enhancer_agent,
     create_evaluator_agent,
     create_optimizer_agent,
     create_playground_agent,
 )
-from backend.api.models import (
+from api.models import (
     CreatePromptRequest,
     EnhancePromptRequest,
     EvaluatePromptRequest,
@@ -23,13 +26,20 @@ from backend.api.models import (
     OptimizerResult,
     FewShotExample,
 )
-from backend.tools.variable_tool import interpolate_variables, find_missing_variables
+from tools.variable_tool import interpolate_variables, find_missing_variables
 import json
 import asyncio
+import uuid
 from typing import AsyncGenerator
 
 router = APIRouter()
 
+# Global database-backed session service - persists across restarts!
+_session_service = DatabaseSessionService()
+
+async def get_session_service() -> DatabaseSessionService:
+    """Get the global session service."""
+    return _session_service
 
 async def stream_agent_response(agent, prompt: str) -> AsyncGenerator[str, None]:
     """
@@ -43,18 +53,30 @@ async def stream_agent_response(agent, prompt: str) -> AsyncGenerator[str, None]
         Text chunks from the agent's response
     """
     try:
-        from google.adk.runners import Runner
-        from google.adk.sessions import InMemorySessionService
-        
-        # Create runner with in-memory session service
-        session_service = InMemorySessionService()
-        runner = Runner(agent=agent, session_service=session_service)
+        session_service = await get_session_service()
+        runner = Runner(agent=agent, session_service=session_service, app_name="prompt_agent")
         
         # Run agent asynchronously and collect events
         full_text = ""
-        async for event in runner.run_async(user_message=prompt):
+        user_id = "default_user"
+        # Use a consistent session ID for the user or generate new one?
+        # For now, generate new one per request to avoid state pollution between requests
+        # unless we want to support multi-turn chat later.
+        session_id = str(uuid.uuid4())
+        
+        await session_service.create_session(user_id=user_id, session_id=session_id, app_name="prompt_agent")
+        
+        message = Content(role="user", parts=[Part(text=prompt)])
+        
+        async for event in runner.run_async(new_message=message, user_id=user_id, session_id=session_id):
             # Extract text from agent response events
-            if hasattr(event, 'data') and hasattr(event.data, 'text'):
+            if hasattr(event, 'content') and event.content and event.content.parts:
+                for part in event.content.parts:
+                    if part.text:
+                        text_chunk = part.text
+                        full_text += text_chunk
+                        yield text_chunk
+            elif hasattr(event, 'data') and hasattr(event.data, 'text'):
                 text_chunk = event.data.text
                 full_text += text_chunk
                 yield text_chunk
@@ -74,7 +96,44 @@ async def stream_agent_response(agent, prompt: str) -> AsyncGenerator[str, None]
         yield f"\n\n[Error: {str(e)}]"
 
 
-
+async def run_agent(agent, prompt: str) -> str:
+    """
+    Run agent and return full text response using ADK Runner.
+    Ensures app_name is passed to Runner initialization.
+    """
+    try:
+        session_service = await get_session_service()
+        runner = Runner(agent=agent, session_service=session_service, app_name="prompt_agent")
+        
+        # Run agent asynchronously and collect events
+        full_text = ""
+        last_event = None
+        user_id = "default_user"
+        session_id = str(uuid.uuid4())
+        
+        await session_service.create_session(user_id=user_id, session_id=session_id, app_name="prompt_agent")
+        
+        message = Content(role="user", parts=[Part(text=prompt)])
+        
+        async for event in runner.run_async(new_message=message, user_id=user_id, session_id=session_id):
+            last_event = event
+            # Extract text from agent response events
+            if hasattr(event, 'content') and event.content and event.content.parts:
+                for part in event.content.parts:
+                    if part.text:
+                        full_text += part.text
+            elif hasattr(event, 'data') and hasattr(event.data, 'text'):
+                full_text += event.data.text
+            elif hasattr(event, 'text'):
+                full_text += event.text
+                
+        # If no streaming occurred, try to get response from last event
+        if not full_text and last_event and hasattr(last_event, 'response'):
+            full_text = str(last_event.response)
+            
+        return full_text
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Agent execution failed: {str(e)}")
 
 
 @router.post("/agents/create")
@@ -127,11 +186,8 @@ Prompt to analyze:
 Return a JSON array of blocks.
         """.strip()
         
-        # Get response from agent
-        response = await agent.generate(prompt_text)
-        
-        # Parse JSON response
-        response_text = response.text if hasattr(response, 'text') else str(response)
+        # Get response from agent using explicit Runner
+        response_text = await run_agent(agent, prompt_text)
         
         # Try to extract JSON from response
         try:
@@ -197,8 +253,7 @@ Evaluate the following prompt:
 Provide detailed scores, risks, and suggestions in JSON format.
         """.strip()
         
-        response = await agent.generate(prompt_text)
-        response_text = response.text if hasattr(response, 'text') else str(response)
+        response_text = await run_agent(agent, prompt_text)
         
         # Parse JSON response
         try:
@@ -250,8 +305,7 @@ Suggestions to incorporate:
 Return a JSON array of variations with prompts and rationales.
         """.strip()
         
-        response = await agent.generate(prompt_text)
-        response_text = response.text if hasattr(response, 'text') else str(response)
+        response_text = await run_agent(agent, prompt_text)
         
         # Parse JSON response
         try:
@@ -335,8 +389,7 @@ Generate {request.count} high-quality few-shot examples for this prompt:
 Return as JSON array with 'input' and 'output' fields.
         """.strip()
         
-        response = await agent.generate(prompt_text)
-        response_text = response.text if hasattr(response, 'text') else str(response)
+        response_text = await run_agent(agent, prompt_text)
         
         try:
             cleaned = response_text.strip()

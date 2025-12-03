@@ -59,7 +59,4 @@ Return your response as JSON with this structure:
         """.strip(),
         description=f"Evaluates prompts using rubric: {rubric}",
         tools=[],
-        config={
-            "thinking_config": {"thinking_budget": 2048}  # Enable deep thinking
-        }
     )

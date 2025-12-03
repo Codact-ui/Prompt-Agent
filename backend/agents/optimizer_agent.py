@@ -42,7 +42,4 @@ Return your response as a JSON array with this structure:
         """.strip(),
         description="Generates optimized prompt variations based on feedback",
         tools=[],
-        config={
-            "thinking_config": {"thinking_budget": 2048}
-        }
     )

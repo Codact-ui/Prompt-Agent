@@ -1,10 +1,23 @@
 """FastAPI server for ADK backend."""
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from backend.api.routes import router
-from backend.config.settings import get_settings
+from contextlib import asynccontextmanager
+from api.routes import router
+from config.settings import get_settings
+from database import init_db
 
 settings = get_settings()
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Initialize database on startup."""
+    print("Initializing database...")
+    await init_db()
+    print("✅ Database initialized!")
+    yield
+    print("Shutting down...")
+
 
 app = FastAPI(
     title="Prompt Engineering ADK API",
@@ -12,6 +25,7 @@ app = FastAPI(
     version="1.0.0",
     docs_url="/docs",
     redoc_url="/redoc",
+    lifespan=lifespan,
 )
 
 # Configure CORS for frontend
@@ -24,7 +38,9 @@ app.add_middleware(
 )
 
 # Include API routes
+from api.data_routes import router as data_router
 app.include_router(router, prefix="/api")
+app.include_router(data_router, prefix="/api")
 
 
 @app.get("/")

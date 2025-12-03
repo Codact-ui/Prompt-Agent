@@ -1,20 +1,22 @@
 # Prompt Optimizer Agent
 
-A powerful, intelligent workspace designed to iteratively create, enhance, evaluate, and optimize prompts for Large Language Models (LLMs). Inspired by a minimalist, Notion-like UI, this application now features a **Google ADK (Agent Development Kit)** powered backend with true multi-agent orchestration.
+A powerful, intelligent workspace designed to iteratively create, enhance, evaluate, and optimize prompts for Large Language Models (LLMs). Inspired by a minimalist, Notion-like UI, this application features a **Google ADK (Agent Development Kit)** powered backend with true multi-agent orchestration.
 
 ## 🏗️ Architecture
 
-### **Frontend** (React + TypeScript)
-Beautiful, responsive UI with 5 specialized agent interfaces
+### **Frontend** (React + TypeScript + Vite)
+Beautiful, responsive UI with 5 specialized agent interfaces and modern tooling
 
-### **Backend** (Python + Google ADK) ✨ NEW!
+### **Backend** (Python + Google ADK) ✨
 Production-ready multi-agent system with:
 - 6 ADK-powered agents (Creator, Enhancer, Evaluator, Optimizer, Playground + Coordinator)
-- FastAPI server with streaming support
+- FastAPI server with async/streaming support
 - Type-safe API with Pydantic models
+- SQLite database for prompt management
 - Deployment-ready (Docker, Cloud Run)
+- MCP (Model Context Protocol) server integration support
 
-**[📖 Backend Documentation](backend/README.md)** | **[🚀 Quick Start](backend/README.md#setup)**
+**[📖 Backend Documentation](backend/README.md)** | **[🚀 Quick Start](#-quick-start)**
 
 ---
 
@@ -61,6 +63,73 @@ The application consists of five specialized agents and a suite of productivity 
 *   **Markdown Support:** Rich text rendering for all model outputs.
 *   **Data Management:** Full Import/Export capabilities for your templates and history (JSON format).
 *   **Dark Mode:** Fully responsive UI with light and dark themes.
+
+## 🚀 Quick Start
+
+### Prerequisites
+
+- **Node.js** 16+ and **pnpm** (recommended) or npm
+- **Python** 3.11+
+- **Gemini API Key** (get it from [Google AI Studio](https://aistudio.google.com/)) OR Google Cloud credentials
+
+### 1. Backend Setup
+
+```bash
+# Navigate to backend directory
+cd backend
+
+# Run automated setup script
+python setup.py
+```
+
+The setup script will:
+- Create a Python virtual environment
+- Install all dependencies
+- Guide you through API key configuration
+- Initialize the database
+- Start the server on `http://localhost:8000`
+
+**Manual Setup** (if you prefer):
+```bash
+cd backend
+python -m venv venv
+.\venv\Scripts\activate  # On Windows
+# source venv/bin/activate  # On macOS/Linux
+
+pip install -r requirements.txt
+
+# Create .env file with your API key
+echo "GOOGLE_API_KEY=your_api_key_here" > .env
+
+# Initialize database
+python init_db.py
+
+# Start server
+uvicorn api.server:app --reload
+```
+
+### 2. Frontend Setup
+
+```bash
+# From project root
+pnpm install  # or npm install
+
+# Create .env file
+echo "VITE_ADK_BACKEND_URL=http://localhost:8000/api" > .env
+echo "VITE_USE_ADK_BACKEND=true" >> .env
+
+# Start development server
+pnpm dev  # or npm run dev
+```
+
+Open [http://localhost:3000](http://localhost:3000) in your browser!
+
+### 3. Verify Setup
+
+1. Open the Creator Agent
+2. Enter a simple goal (e.g., "Create a blog post about AI")
+3. Click "Generate Prompt"
+4. If you see a formatted prompt response, you're all set! 🎉
 
 ## ⚙️ Configuration
 
@@ -139,22 +208,90 @@ This project is a full-stack application with separate frontend and backend.
 
 ```
 Prompt-Agent/
-├── frontend/                 # React TypeScript application
-│   ├── components/
-│   │   └── agents/          # Agent UI components
-│   ├── services/            # API integration
+├── components/              # React UI components
+│   ├── agents/             # Agent-specific interfaces
+│   ├── AppBar.tsx          # Top navigation
+│   ├── PromptLibrary.tsx   # Template management
 │   └── ...
 │
-├── backend/                 # ✨ NEW: Python ADK backend
-│   ├── agents/              # ADK LlmAgent implementations
-│   ├── api/                 # FastAPI server & routes
-│   ├── tools/               # Utility tools
-│   ├── config/              # Configuration management
+├── services/               # API integration layer
+│   ├── adkService.ts       # ADK backend client
+│   └── geminiService.ts    # Legacy Gemini client
+│
+├── contexts/               # React Context providers
+│   ├── SettingsContext.tsx # Global settings
+│   └── ThemeContext.tsx    # Dark/light mode
+│
+├── backend/                # ✨ Python ADK backend
+│   ├── agents/             # ADK LlmAgent implementations
+│   │   ├── creator_agent.py
+│   │   ├── enhancer_agent.py
+│   │   ├── evaluator_agent.py
+│   │   ├── optimizer_agent.py
+│   │   └── playground_agent.py
+│   ├── api/                # FastAPI server & routes
+│   │   ├── server.py       # Main FastAPI app
+│   │   ├── routes.py       # Agent endpoints
+│   │   └── data_routes.py  # Database CRUD
+│   ├── database/           # SQLite ORM & models
+│   ├── tools/              # Utility tools
+│   ├── config/             # Configuration
 │   ├── requirements.txt
 │   ├── Dockerfile
-│   └── README.md           # Backend documentation
+│   └── README.md
 │
+├── .env.example            # Environment template
+├── package.json
 └── README.md               # This file
+```
+
+## 🚀 Deployment
+
+### Docker Deployment
+
+Build and run with Docker:
+
+```bash
+# Backend
+cd backend
+docker build -t prompt-agent-backend .
+docker run -p 8000:8000 --env-file .env prompt-agent-backend
+
+# Frontend (create Dockerfile first)
+# TODO: Add frontend Dockerfile
+```
+
+### Google Cloud Run
+
+Deploy the backend to Cloud Run:
+
+```bash
+cd backend
+
+# Build and push to Artifact Registry
+gcloud builds submit --tag gcr.io/YOUR_PROJECT_ID/prompt-agent-backend
+
+# Deploy to Cloud Run
+gcloud run deploy prompt-agent-backend \
+  --image gcr.io/YOUR_PROJECT_ID/prompt-agent-backend \
+  --platform managed \
+  --region us-central1 \
+  --allow-unauthenticated \
+  --set-env-vars GOOGLE_API_KEY=your_key_here
+```
+
+### Environment Variables
+
+#### Backend (.env in `backend/`)
+```bash
+GOOGLE_API_KEY=your_gemini_api_key
+PORT=8000  # Optional, defaults to 8000
+```
+
+#### Frontend (.env in root)
+```bash
+VITE_ADK_BACKEND_URL=http://localhost:8000/api
+VITE_USE_ADK_BACKEND=true
 ```
 
 ## 📚 Resources

@@ -1,6 +1,6 @@
 
 import React, { useState, useCallback } from 'react';
-import { streamCreatePrompt } from '../../services/adkService';
+import { streamCreatePrompt, savePrompt } from '../../services/adkService';
 import { AgentType, HistoryItem } from '../../types';
 import Header from '../Header';
 import { CreateIcon, CopyIcon, SaveIcon, SearchIcon } from '../icons/AgentIcons';
@@ -61,6 +61,14 @@ const CreatorAgent: React.FC<CreatorAgentProps> = ({ onSendToEnhance, onSendToEv
           result: finalPrompt,
           timestamp: new Date().toISOString(),
         });
+
+        // Auto-save to database
+        try {
+          await savePrompt('creator', `Goal: ${goal}`, finalPrompt, []);
+        } catch (saveError) {
+          console.error('Failed to auto-save prompt to database:', saveError);
+          // Don't show error to user as this is a background operation
+        }
       }
     }
   }, [goal, audience, constraints, addToHistory, error, settings, useSearch]);

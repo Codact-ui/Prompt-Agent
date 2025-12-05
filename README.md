@@ -249,16 +249,21 @@ Prompt-Agent/
 
 ### Docker Deployment
 
-Build and run with Docker:
+### Docker Deployment (Recommended)
+
+Run the entire stack (Frontend, Backend, Database, Nginx) with a single command:
 
 ```bash
-# Backend
-cd backend
-docker build -t prompt-agent-backend .
-docker run -p 8000:8000 --env-file .env prompt-agent-backend
+# Create .env file for Docker
+cp backend/.env.example backend/.env
+# Edit .env and set your GOOGLE_API_KEY
 
-# Frontend (create Dockerfile first)
-# TODO: Add frontend Dockerfile
+# Build and start services
+docker compose up --build -d
+
+# Access application
+# Frontend: http://localhost
+# Backend API: http://localhost/api
 ```
 
 ### Google Cloud Run

@@ -1,0 +1,90 @@
+version: "3.9"
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:16
+    container_name: prompt-agent-postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-promptagent}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-promptagent}
+      POSTGRES_DB: ${POSTGRES_DB:-promptagent}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    expose:
+      - "5432"
+    restart: unless-stopped
+    networks:
+      - app-network
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-promptagent}" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Backend API (FastAPI)
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: prompt-agent-backend
+    env_file:
+      - ./backend/.env
+    environment:
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-promptagent}:${POSTGRES_PASSWORD:-promptagent}@postgres:5432/${POSTGRES_DB:-promptagent}
+    expose:
+      - "8000"
+    restart: unless-stopped
+    networks:
+      - app-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: [ "CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/models')" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Frontend Builder (builds and copies to volume)
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: prompt-agent-frontend
+    volumes:
+      - frontend_build:/frontend_build
+    depends_on:
+      - backend
+    networks:
+      - app-network
+
+  # Nginx Reverse Proxy
+  nginx:
+    image: nginx:stable-alpine
+    container_name: prompt-agent-nginx
+    depends_on:
+      - backend
+      - frontend
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - frontend_build:/var/www/frontend:ro
+    restart: unless-stopped
+    networks:
+      - app-network
+    healthcheck:
+      test: [ "CMD", "wget", "-q", "--spider", "http://localhost/health" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+networks:
+  app-network:
+    driver: bridge
+
+volumes:
+  frontend_build:
+  postgres_data:

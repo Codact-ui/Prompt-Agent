@@ -1,0 +1,54 @@
+# Virtual environments
+.venv/
+venv/
+__pycache__/
+*.pyc
+*.pyo
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Git
+.git/
+.gitignore
+
+# Database files (recreated on start)
+*.db
+*.sqlite3
+
+# Environment files (mounted separately)
+.env
+.env.local
+
+# Documentation
+*.md
+docs/
+
+# Testing
+tests/
+*_test.py
+test_*.py
+pytest.ini
+.pytest_cache/
+coverage/
+htmlcov/
+
+# Logs
+*.log
+logs/
+
+# Development scripts
+check_*.py
+fix_*.py
+inspect_*.py
+setup.py
+
+# OpenAPI spec (generated)
+openapi.json
+
+# Misc
+.DS_Store
+Thumbs.db

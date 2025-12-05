@@ -1,0 +1,56 @@
+# Dependencies
+node_modules/
+**/node_modules/
+.pnpm-store/
+
+# Python virtual env
+.venv/
+**/.venv/
+venv/
+**/venv/
+**/__pycache__/
+*.pyc
+
+# Build output (we build inside container)
+dist/
+build/
+
+# Development
+.git/
+.gitignore
+*.md
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Backend (separate build context)
+backend/
+
+# Docker
+docker-compose*.yml
+Dockerfile*
+nginx/
+
+# Testing
+*.test.ts
+*.spec.ts
+coverage/
+playwright-report/
+test-results/
+
+# Database
+*.db
+*.sqlite3
+
+# Misc
+*.log
+.DS_Store
+Thumbs.db

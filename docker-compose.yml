@@ -34,6 +34,7 @@ services:
       DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-promptagent}:${POSTGRES_PASSWORD:-promptagent}@postgres:5432/${POSTGRES_DB:-promptagent}
     expose:
       - "8000"
+    command: uvicorn api.server:app --host 0.0.0.0 --port 8000
     restart: unless-stopped
     networks:
       - app-network

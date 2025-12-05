@@ -64,7 +64,7 @@ const PlaygroundAgent: React.FC<PlaygroundAgentProps> = ({ initialPrompt, addToH
     const runPrompt = async (targetSetOutput: React.Dispatch<React.SetStateAction<string>>) => {
         let finalOutput = '';
         try {
-            const stream = await runTestPrompt(prompt, variableValues, settings);
+            const stream = await runTestPrompt(prompt, variableValues, settings, settings.selectedModel);
             for await (const chunk of stream) {
                 const text = chunk.text;
                 if (text) {

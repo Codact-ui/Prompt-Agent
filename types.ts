@@ -54,8 +54,15 @@ export interface HistoryItem {
   id: string;
 }
 
+export interface Model {
+  id: string;
+  name: string;
+  provider: string;
+}
+
 export interface AppSettings {
-  model: string;
-  temperature: number;
-  customEvaluationRubric: string;
+  theme: 'light' | 'dark';
+  useSearch: boolean;
+  autoOptimize: boolean;
+  selectedModel?: string;
 }

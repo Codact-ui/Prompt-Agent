@@ -19,6 +19,11 @@ class Settings(BaseSettings):
     adk_model: str = "gemini-2.5-flash"
     adk_thinking_model: str = "gemini-2.5-flash"
     
+    # Model Provider Configuration
+    model_provider: str = "gemini"  # "gemini" or "litellm"
+    litellm_model: str = "ollama/kimi-k2-thinking:cloud"  # Model ID for LiteLLM (e.g., "ollama/llama3.2")
+    litellm_api_base: str = "http://localhost:11501"  # Ollama default API base
+    
     # API Configuration
     cors_origins: List[str] = ["http://localhost:5173", "http://localhost:3000"]
     

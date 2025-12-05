@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { enhancePrompt, generateFewShotExamples } from '../../services/adkService';
 import { PromptBlock, HistoryItem, AgentType } from '../../types';
@@ -46,7 +45,7 @@ const EnhancerAgent: React.FC<EnhancerAgentProps> = ({ initialPrompt, onSendToEv
     setError(null);
     setEnhancedBlocks([]);
     try {
-      const blocks = await enhancePrompt(currentPrompt, settings);
+      const blocks = await enhancePrompt(currentPrompt, settings, settings.selectedModel);
       setEnhancedBlocks(blocks);
       const initialAccepted: Record<string, boolean> = {};
       blocks.forEach(b => initialAccepted[b.id] = true);
@@ -72,7 +71,7 @@ const EnhancerAgent: React.FC<EnhancerAgentProps> = ({ initialPrompt, onSendToEv
     if (!prompt) return;
     setIsGeneratingExamples(true);
     try {
-      const examples = await generateFewShotExamples(prompt, 3, settings);
+      const examples = await generateFewShotExamples(prompt, 3, settings, settings.selectedModel);
       const examplesText = `\n\n### Examples\n\n${examples.map(ex => `Input: ${ex.input}\nOutput: ${ex.output}`).join('\n\n')}`;
       setPrompt(prev => prev + examplesText);
     } catch (e) {

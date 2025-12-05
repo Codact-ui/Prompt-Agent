@@ -10,17 +10,20 @@ class CreatePromptRequest(BaseModel):
     audience: str = Field(default="", description="Target audience")
     constraints: str = Field(default="", description="Constraints and requirements")
     use_search: bool = Field(default=False, description="Enable Google Search grounding")
+    model: Optional[str] = Field(None, description="Model ID to use (e.g., 'ollama/llama3')")
 
 
 class EnhancePromptRequest(BaseModel):
     """Request model for enhancing/structuring a prompt."""
     prompt: str = Field(..., description="Prompt to enhance", min_length=1)
+    model: Optional[str] = Field(None, description="Model ID to use")
 
 
 class EvaluatePromptRequest(BaseModel):
     """Request model for evaluating a prompt."""
     prompt: str = Field(..., description="Prompt to evaluate", min_length=1)
     custom_rubric: Optional[str] = Field(None, description="Custom evaluation criteria")
+    model: Optional[str] = Field(None, description="Model ID to use")
 
 
 class OptimizePromptRequest(BaseModel):
@@ -28,18 +31,21 @@ class OptimizePromptRequest(BaseModel):
     prompt: str = Field(..., description="Prompt to optimize", min_length=1)
     count: int = Field(3, ge=1, le=5, description="Number of variations to generate")
     suggestions: List[str] = Field(..., description="Optimization suggestions from evaluation")
+    model: Optional[str] = Field(None, description="Model ID to use")
 
 
 class TestPromptRequest(BaseModel):
     """Request model for testing a prompt with variables."""
     prompt: str = Field(..., description="Prompt to test", min_length=1)
     variables: Dict[str, str] = Field(default_factory=dict, description="Variable values for interpolation")
+    model: Optional[str] = Field(None, description="Model ID to use")
 
 
 class GenerateFewShotRequest(BaseModel):
     """Request model for generating few-shot examples."""
     prompt: str = Field(..., description="Prompt to generate examples for", min_length=1)
     count: int = Field(3, ge=1, le=5, description="Number of examples to generate")
+    model: Optional[str] = Field(None, description="Model ID to use")
 
 
 # Response Models

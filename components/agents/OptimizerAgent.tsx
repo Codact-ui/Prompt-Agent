@@ -75,7 +75,7 @@ const OptimizerAgent: React.FC<OptimizerAgentProps> = ({ initialPrompt, suggesti
         setError(null);
         setResults([]);
         try {
-            const variations = await optimizePrompt(prompt, variationCount, suggestions, settings);
+            const variations = await optimizePrompt(prompt, variationCount, suggestions, settings, settings.selectedModel);
             setResults(variations);
             if (variations.length > 0) {
                 addToHistory({

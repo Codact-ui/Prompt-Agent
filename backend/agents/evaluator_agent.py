@@ -1,16 +1,18 @@
 """Evaluator Agent for scoring and assessing prompts."""
 from google.adk.agents import Agent
 from config.settings import get_settings
+from models.model_factory import get_model
 from typing import Optional
 
 
-def create_evaluator_agent(custom_rubric: Optional[str] = None) -> Agent:
+def create_evaluator_agent(custom_rubric: Optional[str] = None, model: str = None) -> Agent:
     """
     Creates the Evaluator Agent that scores prompts against evaluation criteria
     and identifies risks and optimization opportunities.
     
     Args:
         custom_rubric: Custom evaluation criteria (if None, uses default)
+        model: Optional model ID to use
         
     Returns:
         Configured Agent for prompt evaluation
@@ -20,40 +22,37 @@ def create_evaluator_agent(custom_rubric: Optional[str] = None) -> Agent:
     
     return Agent(
         name="evaluator_agent",
-        model=settings.adk_thinking_model,  # Use thinking model for deeper analysis
+        model=get_model(use_thinking_model=True, model_name=model),  # Use thinking model for deeper analysis
         instruction=f"""
-You are a prompt evaluation expert. Analyze prompts using these criteria: {rubric}
+You are a critical prompt evaluation expert. Your goal is to rigorously assess prompts to ensure they are production-ready.
+Use the following criteria: {rubric}
 
-Evaluation Process:
-1. For each criterion in the rubric, assign a score from 0-100 with specific rationale
-2. Identify 2-3 potential risks, weaknesses, or areas of concern
-3. Generate 3-4 concrete, actionable optimization suggestions
-4. Consider real-world usage patterns, edge cases, and potential failure modes
+### Evaluation Process
+1. **Analyze**: Read the prompt deeply. Does it actually solve the user's problem? Is it robust?
+2. **Score**: Assign a score (0-100) for each criterion. Be strict. High scores (90+) are reserved for perfection.
+3. **Critique**: Identify specific weaknesses. Don't just say "good"; say "ambiguous instruction in section 2".
+4. **Improve**: Provide concrete, rewrite-ready suggestions.
 
-Scoring Guidelines:
-- 90-100: Exceptional quality, best practices followed
-- 70-89: Good quality with minor improvements needed
-- 50-69: Adequate but significant improvements recommended
-- 30-49: Poor quality, major issues present
-- 0-29: Fundamentally flawed, requires complete restructuring
+### Scoring Guidelines
+- **90-100 (Excellent)**: Flawless, handles edge cases, clear examples.
+- **70-89 (Good)**: Solid but has minor ambiguity or missing constraints.
+- **50-69 (Average)**: Functional but vague; needs significant tightening.
+- **<50 (Poor)**: Fails to address the core task or is confusing.
 
-Be thorough but concise. Focus on actionable feedback that will genuinely improve the prompt.
-
-Return your response as JSON with this structure:
+### Output Format
+Return a JSON object with this EXACT structure:
 {{
   "scores": [
-    {{"criteria": "Clarity", "score": 85, "rationale": "Clear but could be more specific..."}},
+    {{"criteria": "Clarity", "score": 75, "rationale": "Instructions are mostly clear but the output format is vague."}},
     ...
   ],
   "risks": [
-    "Potential issue 1...",
-    "Potential issue 2...",
-    ...
+    "The prompt allows for hallucination because it lacks source constraints.",
+    "No error handling specified for malformed inputs."
   ],
   "suggestions": [
-    "Concrete improvement 1...",
-    "Concrete improvement 2...",
-    ...
+    "Add a 'Constraints' section explicitly forbidding external tools.",
+    "Include a few-shot example for the JSON output format."
   ]
 }}
         """.strip(),

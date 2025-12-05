@@ -37,6 +37,24 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
+from fastapi import Request
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    print(f"Validation Error: {exc.errors()}")
+    print(f"Request Headers: {request.headers}")
+    try:
+        body = await request.body()
+        print(f"Raw Request Body: {body.decode('utf-8')}")
+    except Exception as e:
+        print(f"Could not read request body: {e}")
+    return JSONResponse(
+        status_code=422,
+        content={"detail": exc.errors(), "body": str(exc.body)},
+    )
+
 # Include API routes
 from api.data_routes import router as data_router
 app.include_router(router, prefix="/api")

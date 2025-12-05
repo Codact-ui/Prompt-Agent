@@ -1,12 +1,16 @@
 """Playground Agent for testing prompts with variable interpolation."""
 from google.adk.agents import Agent
 from config.settings import get_settings
+from models.model_factory import get_model
 
 
-def create_playground_agent() -> Agent:
+def create_playground_agent(model: str = None) -> Agent:
     """
     Creates the Playground Agent for testing prompts with variable interpolation.
     
+    Args:
+        model: Optional model ID to use
+
     Returns:
         Configured Agent for prompt testing
     """
@@ -14,7 +18,7 @@ def create_playground_agent() -> Agent:
     
     return Agent(
         name="playground_agent",
-        model=settings.adk_model,
+        model=get_model(model_name=model),
         instruction="""
 You are a prompt testing assistant. Execute prompts exactly as provided and 
 return natural, high-quality responses.

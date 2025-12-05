@@ -1,13 +1,17 @@
 """Optimizer Agent for generating improved prompt variations."""
 from google.adk.agents import Agent
 from config.settings import get_settings
+from models.model_factory import get_model
 
 
-def create_optimizer_agent() -> Agent:
+def create_optimizer_agent(model: str = None) -> Agent:
     """
     Creates the Optimizer Agent that generates improved prompt variations
     based on evaluation feedback.
     
+    Args:
+        model: Optional model ID to use
+
     Returns:
         Configured Agent for prompt optimization
     """
@@ -15,7 +19,7 @@ def create_optimizer_agent() -> Agent:
     
     return Agent(
         name="optimizer_agent",
-        model=settings.adk_thinking_model,
+        model=get_model(use_thinking_model=True, model_name=model),
         instruction="""
 You are a prompt optimization specialist. Generate improved variations of 
 prompts based on expert evaluation feedback.

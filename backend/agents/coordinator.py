@@ -1,6 +1,7 @@
 """Coordinator Agent for multi-agent orchestration."""
 from google.adk.agents import Agent
 from config.settings import get_settings
+from models.model_factory import get_model
 from agents.creator_agent import create_creator_agent
 from agents.enhancer_agent import create_enhancer_agent
 from agents.evaluator_agent import create_evaluator_agent
@@ -20,7 +21,7 @@ def create_coordinator_agent() -> Agent:
     
     return Agent(
         name="prompt_engineering_coordinator",
-        model=settings.adk_model,
+        model=get_model(),
         instruction="""
 You are the coordinator of a sophisticated prompt engineering multi-agent system.
 
@@ -42,7 +43,7 @@ Always choose the right agent for the task and provide clear context for delegat
         """.strip(),
         description="Coordinates specialized prompt engineering agents",
         sub_agents=[
-            create_creator_agent(),
+            create_creator_agent(use_search=True),
             create_enhancer_agent(),
             create_evaluator_agent(),
             create_optimizer_agent(),

@@ -1,13 +1,17 @@
 """Enhancer Agent for structuring and improving prompts."""
 from google.adk.agents import Agent
 from config.settings import get_settings
+from models.model_factory import get_model
 
 
-def create_enhancer_agent() -> Agent:
+def create_enhancer_agent(model: str = None) -> Agent:
     """
     Creates the Enhancer Agent that breaks down prompts into structured blocks
     and provides rationales for improvements.
     
+    Args:
+        model: Optional model ID to use
+
     Returns:
         Configured Agent for prompt enhancement
     """
@@ -15,7 +19,7 @@ def create_enhancer_agent() -> Agent:
     
     return Agent(
         name="enhancer_agent",
-        model=settings.adk_model,
+        model=get_model(model_name=model),
         instruction="""
 You are a prompt structure specialist. Analyze LLM prompts and break them 
 down into well-organized blocks with clear rationales.

@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback } from 'react';
 import { streamCreatePrompt, savePrompt } from '../../services/adkService';
 import { AgentType, HistoryItem } from '../../types';
@@ -41,9 +40,18 @@ const CreatorAgent: React.FC<CreatorAgentProps> = ({ onSendToEnhance, onSendToEv
     setGeneratedPrompt('');
     let finalPrompt = '';
     try {
-      const stream = await streamCreatePrompt(goal, audience, constraints, settings, useSearch);
+      const stream = await streamCreatePrompt(
+        goal,
+        audience,
+        constraints,
+        settings,
+        useSearch,
+        settings.selectedModel // Pass selected model
+      );
+
       for await (const chunk of stream) {
-        const text = chunk.text;
+        // Handle both string chunks and object chunks if the service returns them differently
+        const text = typeof chunk === 'string' ? chunk : chunk.text;
         if (text) {
           finalPrompt += text;
           setGeneratedPrompt((prev) => prev + text);
@@ -74,7 +82,7 @@ const CreatorAgent: React.FC<CreatorAgentProps> = ({ onSendToEnhance, onSendToEv
   }, [goal, audience, constraints, addToHistory, error, settings, useSearch]);
 
   return (
-    <div className="max-w-4xl mx-auto p-8">
+    <div className="max-w-7xl mx-auto p-8">
       <Header
         icon={<CreateIcon />}
         title="Creator Agent"

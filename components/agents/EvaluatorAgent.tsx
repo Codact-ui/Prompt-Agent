@@ -51,7 +51,7 @@ const EvaluatorAgent: React.FC<EvaluatorAgentProps> = ({ initialPrompt, addToHis
     setError(null);
     setEvaluation(null);
     try {
-      const result = await evaluatePrompt(currentPrompt, settings);
+      const result = await evaluatePrompt(currentPrompt, settings, undefined, settings.selectedModel);
       setEvaluation(result);
       if (result.scores.length > 0) {
         addToHistory({

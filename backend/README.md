@@ -108,23 +108,6 @@ python -m api.server
 The server will start at `http://localhost:8000`
 
 - **API Docs**: http://localhost:8000/docs
-- **ReDoc**: http://localhost:8000/redoc
-- **Health Check**: http://localhost:8000/health
-
-### Production Mode
-
-```bash
-# Using Docker
-docker build -t prompt-agent-adk .
-docker run -p 8000:8000 --env-file .env prompt-agent-adk
-
-# Or directly with uvicorn
-uvicorn api.server:app --host 0.0.0.0 --port 8000
-```
-
-## API Endpoints
-
-### POST `/api/agents/create`
 Create a new prompt from goals and constraints.
 
 **Request**:

@@ -1,6 +1,5 @@
 """Application settings and configuration."""
 from pydantic_settings import BaseSettings
-from pydantic import field_validator
 from typing import List
 import os
 
@@ -24,15 +23,8 @@ class Settings(BaseSettings):
     litellm_model: str = "ollama/kimi-k2-thinking:cloud"  # Model ID for LiteLLM (e.g., "ollama/llama3.2")
     litellm_api_base: str = "http://localhost:11501"  # Ollama default API base
     
-    # API Configuration
-    cors_origins: List[str] = ["http://localhost:5173", "http://localhost:3000"]
-    
-    @field_validator("cors_origins", mode="before")
-    @classmethod
-    def parse_cors_origins(cls, v):
-        if isinstance(v, str) and not v.strip().startswith("["):
-            return [origin.strip() for origin in v.split(",")]
-        return v
+    # API Configuration - stored as string, parsed in get_settings()
+    cors_origins: str = "http://localhost:5173,http://localhost,http://localhost:3000,http://localhost:80"
     
     # Environment
     environment: str = "development"
@@ -54,6 +46,36 @@ def get_settings() -> Settings:
     global _settings
     if _settings is None:
         _settings = Settings()
+        
+        # Parse CORS origins from string to list
+        defaults = ["http://localhost:5173", "http://localhost", "http://localhost:3000", "http://localhost:80"]
+        try:
+            cors_str = _settings.cors_origins
+            if cors_str:
+                cors_str = cors_str.strip()
+                # JSON array format
+                if cors_str.startswith("[") and cors_str.endswith("]"):
+                    import json
+                    try:
+                        parsed = json.loads(cors_str)
+                        if isinstance(parsed, list):
+                            _settings.cors_origins = [str(item).strip() for item in parsed if item] or defaults
+                        else:
+                            _settings.cors_origins = defaults
+                    except (json.JSONDecodeError, ValueError, TypeError):
+                        # Fall through to comma-separated parsing
+                        origins = [origin.strip() for origin in cors_str.split(",") if origin.strip()]
+                        _settings.cors_origins = origins if origins else defaults
+                else:
+                    # Comma-separated string
+                    origins = [origin.strip() for origin in cors_str.split(",") if origin.strip()]
+                    _settings.cors_origins = origins if origins else defaults
+            else:
+                _settings.cors_origins = defaults
+        except Exception as e:
+            import sys
+            print(f"Warning: Error parsing CORS_ORIGINS: {e}, using defaults", file=sys.stderr)
+            _settings.cors_origins = defaults
         
         # Auto-configure Google Gen AI environment variables for ADK
         if _settings.gemini_api_key:

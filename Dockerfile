@@ -14,7 +14,10 @@ RUN pnpm install --frozen-lockfile
 # Copy source code
 COPY . .
 
-# Build Vite production bundle
+# Build Vite production bundle with relative API URL for Docker
+# This makes the frontend use nginx proxy instead of direct backend access
+ARG VITE_ADK_BACKEND_URL=/api
+ENV VITE_ADK_BACKEND_URL=${VITE_ADK_BACKEND_URL}
 RUN pnpm build
 
 # Copy built assets to shared volume on container start
